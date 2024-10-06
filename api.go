@@ -58,7 +58,7 @@ func (ac *ArticlesController) AddArticle(c *gin.Context) {
 	}
 
 	if err := ac.DB.Create(&article).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create article"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create article!"})
 		return
 	}
 
@@ -105,7 +105,7 @@ func (s *APIServer) GetArticles(c *gin.Context) {
 	var articles []Articles
 	err = s.database.Order("created_at desc").Offset(offset).Limit(pageSize).Find(&articles).Error
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to fetch articles: %v", err)})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to fetch articles! %v", err)})
 		return
 	}
 
@@ -118,14 +118,14 @@ func (s *APIServer) GetArticlesWithCache(c *gin.Context) {
 		var articles []Articles
 		err := s.database.Preload("Category").Order("created_at desc").Limit(10).Find(&articles).Error
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to fetch articles: %v", err)})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to fetch articles! %v", err)})
 			return
 		}
 
 		jsonData, _ := json.Marshal(articles)
 		err = rdb.Set(ctx, "articles", jsonData, time.Hour).Err()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to cache articles: %v", err)})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to cache articles! %v", err)})
 			return
 		}
 
@@ -154,7 +154,7 @@ func main() {
 	dsn := "host=localhost user=postgres  password=Davina241105 dbname=dbarticle port=5432 sslmode=disable"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
+		log.Fatal("Failed to connect to database!", err)
 	}
 	server := NewAPIServer(":8080", db)
 	server.Run()
