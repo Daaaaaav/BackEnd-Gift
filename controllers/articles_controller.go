@@ -14,9 +14,7 @@ type ArticlesController struct {
 }
 
 func NewArticleController(db *gorm.DB) *ArticlesController {
-	return &ArticlesController{
-		DB: db,
-	}
+	return &ArticlesController{DB: db}
 }
 
 func (ac *ArticlesController) AddArticle(c *gin.Context) {
@@ -27,7 +25,7 @@ func (ac *ArticlesController) AddArticle(c *gin.Context) {
 	}
 
 	if err := ac.DB.Create(&article).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create article"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create article!"})
 		return
 	}
 
@@ -39,7 +37,7 @@ func (ac *ArticlesController) GetArticle(c *gin.Context) {
 
 	var article articles.Articles
 	if err := ac.DB.Preload("Category").First(&article, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Article not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Article not found!"})
 		return
 	}
 
@@ -63,7 +61,7 @@ func (ac *ArticlesController) GetArticles(c *gin.Context) {
 
 	var articles []articles.Articles
 	if err := ac.DB.Preload("Category").Order("created_at desc").Offset(offset).Limit(pageSize).Find(&articles).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch articles"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch!"})
 		return
 	}
 
@@ -75,7 +73,7 @@ func (ac *ArticlesController) UpdateArticle(c *gin.Context) {
 	var article articles.Articles
 
 	if err := ac.DB.First(&article, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Article not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Article not found!"})
 		return
 	}
 
@@ -85,7 +83,7 @@ func (ac *ArticlesController) UpdateArticle(c *gin.Context) {
 	}
 
 	if err := ac.DB.Save(&article).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update article"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update article!"})
 		return
 	}
 
@@ -96,14 +94,14 @@ func (ac *ArticlesController) DeleteArticle(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID, try again!"})
 		return
 	}
 
 	if err := ac.DB.Delete(&articles.Articles{}, id).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete article"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete article!"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Article deleted successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Article successful to be deleted!"})
 }
