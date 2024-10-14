@@ -22,6 +22,7 @@
    
 # Consideration Answers
 1. What if there are thousands of articles in the database?
+
    Create pagination which prevents crashing/data overload through not showing all data at a single time, instead dividing them to 10 per page.
 
    Codes in GetArticle function in articles_controllers.go related to this consideration:
@@ -61,7 +62,8 @@
     }*
 
 2. What if many users are accessing your API at same time?
-      The ratelimitmiddleware.go works exactly to limit request from the same user detected by their IP (due to the small test API server, it is set to 10 requests per user before they receive a HTTP 429 Too Many Requests error and get         blocked for a minute before their request count resets) to prevent server overload so that not only a single user or bot dominates the server, but also having other users possibly accessing the API at the same time without any            techinical difficulties.
+
+   The ratelimitmiddleware.go works exactly to limit request from the same user detected by their IP (due to the small test API server, it is set to 10 requests per user before they receive a HTTP 429 Too Many Requests error and get         blocked for a minute before their request count resets) to prevent server overload so that not only a single user or bot dominates the server, but also having other users possibly accessing the API at the same time without any            techinical difficulties.
 
       Codes in ratelimitmiddleware.go related to this consideration:
       *var (
@@ -102,14 +104,14 @@
 3. What if users perform stored xss and how to prevent it?
          The sanitized user input offerred by the bluemonday library ensures that none of the malicious threats such as malware or data theft can be sent via XSS attacks and injections. The UGCPolicy in particular checks and sanitizes             any user-inputted HTML which means that no harmful HTML links could be stored and displayed in the API as well.
 
-         Codes in AddArticle and UpdateArticle functions in articles_controller.go related to this consideration:
+   	 Codes in AddArticle and UpdateArticle functions in articles_controller.go related to this consideration:
          *p := bluemonday.UGCPolicy()
 	        article.Title = p.Sanitize(article.Title)
 	        article.Content = p.Sanitize(article.Content)
 	        article.Thumbnail = p.Sanitize(article.Thumbnail)
 	        article.Slug = p.Sanitize(article.Slug)*
          
-         Codes in AddCategory and UpdateCategory functions in article_categories_controller.go related to this consideration:
+   	Codes in AddCategory and UpdateCategory functions in article_categories_controller.go related to this consideration:
          *p := bluemonday.UGCPolicy()
 	        categories.Name = p.Sanitize(categories.Name)
 	        categories.Slug = p.Sanitize(categories.Slug)*
