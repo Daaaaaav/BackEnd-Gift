@@ -9,16 +9,15 @@ import (
 )
 
 var (
-	rateLimit         = 5
-	rateResetDuration = time.Minute
-	userRequests      = make(map[string]int)
-	mu                sync.Mutex
+	rateLimit    = 5
+	rateReset    = time.Minute
+	userRequests = make(map[string]int)
+	mu           sync.Mutex
 )
 
 func RateLimitMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userIP := c.ClientIP()
-
 		mu.Lock()
 		if count, exists := userRequests[userIP]; exists {
 			if count >= rateLimit {
@@ -34,7 +33,7 @@ func RateLimitMiddleware() gin.HandlerFunc {
 		mu.Unlock()
 		c.Next()
 		go func() {
-			time.Sleep(rateResetDuration)
+			time.Sleep(rateReset)
 			mu.Lock()
 			userRequests[userIP]--
 			if userRequests[userIP] <= 0 {
