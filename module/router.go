@@ -9,6 +9,7 @@ import (
 	"module/module/controllers"
 	"module/module/middlewares"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -36,8 +37,7 @@ func NewAPIServer(listenAddr string, db *gorm.DB) *APIServer {
 	router := gin.Default()
 	articlesController := controllers.NewArticleController(db)
 	categoriesController := controllers.NewArticleCategoriesController(db)
-	router.Use(RateLimitMiddleware())
-
+	router.Use(middlewares.RateLimitMiddleware())
 	articles := router.Group("/articles")
 	{
 		articles.POST("", articlesController.AddArticle)
@@ -65,25 +65,30 @@ func NewAPIServer(listenAddr string, db *gorm.DB) *APIServer {
 	}
 }
 
-var rateLimiter = time.Tick(time.Second / 10)
-
-func RateLimitMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		<-rateLimiter
-		c.Next()
-	}
-}
-
 func (s *APIServer) GetArticlesWithCache(c *gin.Context) {
+	limit := 10
+	page := 1
+	if p := c.Query("page"); p != "" {
+		page, _ = strconv.Atoi(p)
+	}
+	offset := (page - 1) * limit
+	keyword := c.Query("keyword")
+	categoryID := c.Query("category")
 	cachedArticles, err := rdb.Get(ctx, "articles").Result()
 	if err == redis.Nil {
 		var articles []articles.Articles
-		err := s.database.Preload("Category").Order("created_at desc").Limit(10).Find(&articles).Error
+		query := s.database.Preload("Category").Order("created_at desc").Offset(offset).Limit(limit)
+		if keyword != "" {
+			query = query.Where("title LIKE ?", "%"+keyword+"%")
+		}
+		if categoryID != "" {
+			query = query.Where("category_id = ?", categoryID)
+		}
+		err := query.Find(&articles).Error
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to fetch articles! %v", err)})
 			return
 		}
-
 		jsonData, _ := json.Marshal(articles)
 		err = rdb.Set(ctx, "articles", jsonData, time.Hour).Err()
 		if err != nil {
@@ -108,18 +113,21 @@ func (s *APIServer) GetCategoriesWithCache(c *gin.Context) {
 		var categories []articles.ArticleCategories
 		err := s.database.Preload("Articles").Order("created_at desc").Limit(10).Find(&categories).Error
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to fetch categories! %v", err)})
+			log.Printf("Failed to fetch categories from DB: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch!"})
 			return
 		}
 		jsonData, _ := json.Marshal(categories)
 		err = rdb.Set(ctx, "categories", jsonData, time.Hour).Err()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to cache categories! %v", err)})
+			log.Printf("Failed to cache categories: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to cache!"})
 			return
 		}
 		c.JSON(http.StatusOK, categories)
 		return
 	} else if err != nil {
+		log.Printf("Redis error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Redis error! %v", err)})
 		return
 	}
